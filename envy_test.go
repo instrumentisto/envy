@@ -215,23 +215,26 @@ func TestParse(t *testing.T) {
 		So(obj.N.N.N.V, ShouldEqual, uint(15))
 	})
 
-	/*Convey("Parses values for types behind pointers", t, func() {
+	Convey("Parses values for types behind pointers", t, func() {
 		setEnv("DEREF_BOOL", "true")
 		setEnv("DEREF_INT", "-10")
-		v := 5; ptr1 := &v; ptr2 := &ptr1
+		i := 5
+		ptr1 := &i
+		ptr2 := &ptr1
+		b := true
 		obj := &struct {
-			v *bool `env:"DEREF_BOOL"`
-			n *struct {
-				v ***int `env:"DEREF_INT"`
+			V *bool `env:"DEREF_BOOL"`
+			N *struct {
+				V ***int `env:"DEREF_INT"`
 			}
-		}{n: &struct {
-			v ***int `env:"DEREF_INT"`
+		}{V: &b, N: &struct {
+			V ***int `env:"DEREF_INT"`
 		}{&ptr2}}
 		err := Parser{}.Parse(obj)
 		So(err, ShouldBeNil)
-		So(*obj.v, ShouldEqual, true)
-		So(***(*obj.n).v, ShouldEqual, int(-10))
-	})*/
+		So(*(obj.V), ShouldEqual, true)
+		So(***(obj.N).V, ShouldEqual, int(-10))
+	})
 }
 
 func setEnv(name, val string) {

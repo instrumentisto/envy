@@ -24,9 +24,12 @@ func (p Parser) parseStruct(structVal refl.Value) error {
 		if !fieldVal.CanSet() {
 			continue
 		}
+		for fieldVal.Kind() == refl.Ptr {
+			fieldVal = fieldVal.Elem()
+		}
 		fieldKind := fieldVal.Kind()
-		envVarName, ok := structType.Field(i).Tag.Lookup("env")
-		if !ok && (fieldKind != refl.Struct) {
+		envVarName, hasTag := structType.Field(i).Tag.Lookup("env")
+		if !hasTag && (fieldKind != refl.Struct) {
 			continue
 		}
 		envValue := os.Getenv(envVarName) // TODO: do not parse always
