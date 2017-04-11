@@ -235,6 +235,16 @@ func TestParse(t *testing.T) {
 		So(*(obj.V), ShouldEqual, true)
 		So(***(obj.N).V, ShouldEqual, int(-10))
 	})
+
+	Convey("Omitts nil pointers", t, func() {
+		setEnv("PTR_BOOL", "true")
+		obj := &struct {
+			V *bool `env:"PTR_BOOL"`
+		}{}
+		err := Parser{}.Parse(obj)
+		So(err, ShouldBeNil)
+		So(obj.V, ShouldBeNil)
+	})
 }
 
 func setEnv(name, val string) {

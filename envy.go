@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	ErrUnsupportedType = errors.New("envy: unsupprted type") // TODO: more info
+	ErrUnsupportedType = errors.New("envy: unsupported type") // TODO: more info
 )
 
 type Parser struct{}
@@ -19,12 +19,16 @@ func (p Parser) Parse(obj interface{}) error {
 
 func (p Parser) parseStruct(structVal refl.Value) error {
 	structType := structVal.Type()
+L:
 	for i := 0; i < structVal.NumField(); i++ {
 		fieldVal := structVal.Field(i)
 		if !fieldVal.CanSet() {
 			continue
 		}
 		for fieldVal.Kind() == refl.Ptr {
+			if fieldVal.IsNil() {
+				continue L
+			}
 			fieldVal = fieldVal.Elem()
 		}
 		fieldKind := fieldVal.Kind()
