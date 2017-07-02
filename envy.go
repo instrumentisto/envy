@@ -1,4 +1,4 @@
-package envy
+package envigo
 
 import (
 	"encoding"
@@ -9,9 +9,7 @@ import (
 	"time"
 )
 
-var (
-	ErrUnsupportedType = errors.New("envy: unsupported type") // TODO: more info
-)
+var ErrUnsupportedType = errors.New("envifo: unsupported type")
 
 type Parser struct{}
 

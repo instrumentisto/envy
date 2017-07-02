@@ -1,4 +1,4 @@
-package envy
+package envigo
 
 import (
 	"os"
