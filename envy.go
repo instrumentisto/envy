@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var ErrUnsupportedType = errors.New("envifo: unsupported type")
+var ErrUnsupportedType = errors.New("envigo: unsupported type")
 
 type Parser struct{}
 
