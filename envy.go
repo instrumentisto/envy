@@ -9,7 +9,10 @@ import (
 	"time"
 )
 
-var ErrUnsupportedType = errors.New("envigo: unsupported type")
+var (
+	ErrUnsupportedType = errors.New("envigo: unsupported type")
+	ErrEmptyVarName    = errors.New("envigo: env var name cannot be empty")
+)
 
 type Parser struct{}
 
@@ -41,13 +44,15 @@ L:
 		// Omit non-struct or parse recursive struct if no `env` tag
 		envVarName, hasTag := structType.Field(i).Tag.Lookup("env")
 		if !hasTag {
-			if fieldKind != refl.Struct {
-				continue
-			} else {
+			if fieldKind == refl.Struct {
 				if err := p.parseStruct(fieldVal); err != nil {
 					return err
 				}
+				continue
 			}
+		}
+		if envVarName == "" {
+			return ErrEmptyVarName
 		}
 		envValue := os.Getenv(envVarName) // TODO: do not parse always
 

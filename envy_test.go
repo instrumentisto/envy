@@ -214,14 +214,28 @@ func TestParser_Parse(t *testing.T) {
 		err := Parser{}.Parse(obj)
 
 		Convey("Returns error", func() {
-			So(err, ShouldNotBeNil)
-			// TODO: check for concrete type of error?
+			So(err, ShouldEqual, ErrUnsupportedType)
 		})
 
 		Convey("Does not mutate value", func() {
 			So(obj.V, ShouldEqual, uintptr(5))
 		})
+	})
 
+	Convey("On incorrectly declared tag", t, func() {
+		setEnv("UINT8", "3")
+		obj := &struct {
+			V uint8 `env:""`
+		}{5}
+		err := Parser{}.Parse(obj)
+
+		Convey("Returns error", func() {
+			So(err, ShouldEqual, ErrEmptyVarName)
+		})
+
+		Convey("Does not mutate value", func() {
+			So(obj.V, ShouldEqual, 5)
+		})
 	})
 
 	Convey("Parses nested structs", t, func() {
