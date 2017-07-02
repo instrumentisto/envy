@@ -3,11 +3,12 @@ package envy
 import (
 	"os"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestParse(t *testing.T) {
+func TestParser_Parse(t *testing.T) {
 	Convey("Parses supported types", t, func() {
 		p := Parser{}
 
@@ -17,6 +18,7 @@ func TestParse(t *testing.T) {
 				V bool `env:"BOOL"`
 			}{true}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldBeFalse)
 		})
@@ -27,6 +29,7 @@ func TestParse(t *testing.T) {
 				V string `env:"STRING"`
 			}{"bar"}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, "foo")
 		})
@@ -37,6 +40,7 @@ func TestParse(t *testing.T) {
 				V int `env:"INT"`
 			}{-1}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, int(0))
 		})
@@ -47,6 +51,7 @@ func TestParse(t *testing.T) {
 				V int8 `env:"INT8"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, int8(-123))
 		})
@@ -57,6 +62,7 @@ func TestParse(t *testing.T) {
 				V int16 `env:"INT16"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, int16(-32760))
 		})
@@ -67,6 +73,7 @@ func TestParse(t *testing.T) {
 				V int32 `env:"INT32"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, int32(-8388600))
 		})
@@ -77,6 +84,7 @@ func TestParse(t *testing.T) {
 				V int64 `env:"INT64"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, int64(-2147483640))
 		})
@@ -87,6 +95,7 @@ func TestParse(t *testing.T) {
 				V uint `env:"UINT"`
 			}{1}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, uint(0))
 		})
@@ -97,6 +106,7 @@ func TestParse(t *testing.T) {
 				V uint8 `env:"UINT8"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, uint8(250))
 		})
@@ -107,6 +117,7 @@ func TestParse(t *testing.T) {
 				V uint16 `env:"UINT16"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, uint16(65530))
 		})
@@ -117,6 +128,7 @@ func TestParse(t *testing.T) {
 				V uint32 `env:"UINT32"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, uint32(16777210))
 		})
@@ -127,16 +139,18 @@ func TestParse(t *testing.T) {
 				V uint64 `env:"UINT64"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, uint64(4294967290))
 		})
 
-		Convey("BYTE", func() {
+		Convey("byte", func() {
 			setEnv("BYTE", "255")
 			obj := &struct {
 				V byte `env:"BYTE"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, byte(255))
 		})
@@ -147,6 +161,7 @@ func TestParse(t *testing.T) {
 				V rune `env:"RUNE"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, rune(8388600))
 		})
@@ -157,6 +172,7 @@ func TestParse(t *testing.T) {
 				V float32 `env:"FLOAT32"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual,
 				float32(3.40282346638528859811704183484516925440e+38))
@@ -168,9 +184,24 @@ func TestParse(t *testing.T) {
 				V float64 `env:"FLOAT64"`
 			}{}
 			err := p.Parse(obj)
+
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual,
 				float64(1.797693134862315708145274237317043567981e+308))
+		})
+
+		Convey("time.Duration", func() {
+			setEnv("DURATION", "-1h2m3s4ms5us6ns")
+			obj := &struct {
+				V time.Duration `env:"DURATION"`
+			}{}
+			err := p.Parse(obj)
+
+			So(err, ShouldBeNil)
+			So(obj.V, ShouldEqual,
+				-(time.Hour + 2*time.Minute + 3*time.Second +
+					4*time.Millisecond + 5*time.Microsecond +
+					6*time.Nanosecond))
 		})
 
 	})
@@ -209,6 +240,7 @@ func TestParse(t *testing.T) {
 			}
 		}{}
 		err := Parser{}.Parse(obj)
+
 		So(err, ShouldBeNil)
 		So(obj.V, ShouldEqual, true)
 		So(obj.N.V, ShouldEqual, int(-10))
@@ -231,6 +263,7 @@ func TestParse(t *testing.T) {
 			V ***int `env:"DEREF_INT"`
 		}{&ptr2}}
 		err := Parser{}.Parse(obj)
+
 		So(err, ShouldBeNil)
 		So(*(obj.V), ShouldEqual, true)
 		So(***(obj.N).V, ShouldEqual, int(-10))
@@ -242,19 +275,39 @@ func TestParse(t *testing.T) {
 			V *bool `env:"PTR_BOOL"`
 		}{}
 		err := Parser{}.Parse(obj)
+
 		So(err, ShouldBeNil)
 		So(obj.V, ShouldBeNil)
 	})
+
+	Convey("Parses with custom parser if type has one", t, func() {
+		setEnv("CUSTOM_UINT8", "10")
+		v := customUint8(7)
+		obj := &struct {
+			V *customUint8 `env:"CUSTOM_UINT8"`
+		}{&v}
+		err := Parser{}.Parse(obj)
+
+		So(err, ShouldBeNil)
+		So(*(obj.V), ShouldEqual, 10)
+	})
+}
+
+type customUint8 uint8
+
+func (v *customUint8) UnmarshalText(_ []byte) error {
+	*v = 7
+	return nil
 }
 
 func setEnv(name, val string) {
 	if err := os.Setenv(name, val); err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 }
 
 func unsetEnv(name string) {
 	if err := os.Unsetenv(name); err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 }

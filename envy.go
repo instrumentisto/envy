@@ -1,10 +1,12 @@
 package envy
 
 import (
+	"encoding"
 	"errors"
 	"os"
 	refl "reflect"
 	"strconv"
+	"time"
 )
 
 var (
@@ -14,6 +16,7 @@ var (
 type Parser struct{}
 
 func (p Parser) Parse(obj interface{}) error {
+	// todo: not a struct pointer-check
 	return p.parseStruct(refl.ValueOf(obj).Elem())
 }
 
@@ -22,9 +25,13 @@ func (p Parser) parseStruct(structVal refl.Value) error {
 L:
 	for i := 0; i < structVal.NumField(); i++ {
 		fieldVal := structVal.Field(i)
+
+		// Omit private field
 		if !fieldVal.CanSet() {
 			continue
 		}
+
+		// Dereference pointer
 		for fieldVal.Kind() == refl.Ptr {
 			if fieldVal.IsNil() {
 				continue L
@@ -32,11 +39,38 @@ L:
 			fieldVal = fieldVal.Elem()
 		}
 		fieldKind := fieldVal.Kind()
+
+		// Omit non-struct or parse recursive struct if no `env` tag
 		envVarName, hasTag := structType.Field(i).Tag.Lookup("env")
-		if !hasTag && (fieldKind != refl.Struct) {
-			continue
+		if !hasTag {
+			if fieldKind != refl.Struct {
+				continue
+			} else {
+				if err := p.parseStruct(fieldVal); err != nil {
+					return err
+				}
+			}
 		}
 		envValue := os.Getenv(envVarName) // TODO: do not parse always
+
+		// Unmarshal with custom unmarshaller
+		if field, ok := fieldVal.Interface().(encoding.TextUnmarshaler); ok {
+			if err := field.UnmarshalText([]byte(envValue)); err != nil {
+				return err
+			}
+			continue
+		}
+		// Unmarshal as time.Duration
+		fieldType := fieldVal.Type()
+		if fieldType.PkgPath() == "time" && fieldType.Name() == "Duration" {
+			val, err := time.ParseDuration(envValue)
+			if err != nil {
+				return err
+			}
+			fieldVal.SetInt(int64(val))
+			continue
+		}
+		// Unmarshal as primitive type
 		switch fieldKind {
 		case refl.Bool:
 			val, err := strconv.ParseBool(envValue)
@@ -64,6 +98,7 @@ L:
 				return err
 			}
 			fieldVal.SetFloat(val)
+		// Parse recursive struct
 		case refl.Struct:
 			if err := p.parseStruct(fieldVal); err != nil {
 				return err
