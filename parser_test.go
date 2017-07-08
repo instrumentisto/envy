@@ -1,7 +1,9 @@
 package envigo
 
 import (
+	"errors"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -9,8 +11,18 @@ import (
 )
 
 func TestParser_Parse(t *testing.T) {
-	Convey("When no struct pointer is passed", t, func() {
-		// TODO:
+	Convey("If non-struct pointer is passed", t, func() {
+		p := Parser{}
+		obj1 := struct {
+			V bool
+		}{}
+		some := true
+		obj2 := &some
+
+		Convey("Returns error", func() {
+			So(p.Parse(obj1), ShouldEqual, ErrNotStructPtr)
+			So(p.Parse(obj2), ShouldEqual, ErrNotStructPtr)
+		})
 	})
 
 	Convey("Parses supported types", t, func() {
@@ -256,6 +268,7 @@ func TestParser_Parse(t *testing.T) {
 					}
 				}
 			}
+			h bool
 		}{}
 		err := Parser{}.Parse(obj)
 
@@ -329,16 +342,133 @@ func TestParser_Parse(t *testing.T) {
 		So(obj.V, ShouldBeNil)
 	})
 
-	Convey("Parses with custom parser if type has one", t, func() {
-		setEnv("CUSTOM_UINT8", "10")
-		v := customUint8(3)
-		obj := &struct {
-			V *customUint8 `env:"CUSTOM_UINT8"`
-		}{&v}
-		err := Parser{}.Parse(obj)
+	Convey("Uses custom parser if type has one", t, func() {
 
-		So(err, ShouldBeNil)
-		So(*(obj.V), ShouldEqual, 7)
+		Convey("Performs custome parse correctly", func() {
+			setEnv("CUSTOM_UINT8", "10")
+			v1 := customUint8(1)
+			v2 := customUint8(2)
+			pv2 := &v2
+			obj1 := &struct {
+				V *customUint8 `env:"CUSTOM_UINT8"`
+			}{&v1}
+			obj2 := &struct {
+				V **customUint8 `env:"CUSTOM_UINT8"`
+			}{&pv2}
+			err1 := Parser{}.Parse(obj1)
+			err2 := Parser{}.Parse(obj2)
+
+			So(err1, ShouldBeNil)
+			So(*(obj1.V), ShouldEqual, 7)
+			So(err2, ShouldBeNil)
+			So(**(obj2.V), ShouldEqual, 7)
+		})
+
+	})
+
+	Convey("On tagged struct without custom parser", t, func() {
+
+		Convey("Returns error of unsupported type", func() {
+			setEnv("EMBEDDED_STRUCT", "")
+			setEnv("EMBEDDED_BOOL", "true")
+			setEnv("EMBEDDED_INT", "-2")
+			obj := &struct {
+				V EmbeddedStruct `env:"EMBEDDED_STRUCT"`
+			}{}
+			err := Parser{}.Parse(obj)
+
+			So(err, ShouldEqual, ErrUnsupportedType)
+		})
+
+	})
+
+	Convey("If value cannot be parsed", t, func() {
+
+		Convey("Returns parsing error", func() {
+
+			Convey("supported types", func() {
+				setEnv("FAIL_BOOL", "hi")
+				setEnv("FAIL_INT", "true")
+				setEnv("FAIL_UINT", "false")
+				setEnv("FAIL_FLOAT", "-----")
+				setEnv("FAIL_DURATION", "???")
+				obj1 := &struct {
+					V bool `env:"FAIL_BOOL"`
+				}{}
+				obj2 := &struct {
+					V int `env:"FAIL_INT"`
+				}{}
+				obj3 := &struct {
+					V uint16 `env:"FAIL_UINT"`
+				}{}
+				obj4 := &struct {
+					V float64 `env:"FAIL_FLOAT"`
+				}{}
+				obj5 := &struct {
+					V time.Duration `env:"FAIL_DURATION"`
+				}{}
+				err1 := Parser{}.Parse(obj1)
+				err2 := Parser{}.Parse(obj2)
+				err3 := Parser{}.Parse(obj3)
+				err4 := Parser{}.Parse(obj4)
+				err5 := Parser{}.Parse(obj5)
+
+				So(err1, ShouldNotBeNil)
+				So(err1, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err2, ShouldNotBeNil)
+				So(err2, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err3, ShouldNotBeNil)
+				So(err3, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err4, ShouldNotBeNil)
+				So(err4, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err5, ShouldNotBeNil)
+				So(err5.Error(), ShouldStartWith, "time")
+			})
+
+			Convey("custom parser type", func() {
+				setEnv("FAIL_CUSTOM", "10")
+				v := customFailure(4)
+				pV := &v
+				obj1 := &struct {
+					V *customFailure `env:"FAIL_CUSTOM"`
+				}{pV}
+				obj2 := &struct {
+					V **customFailure `env:"FAIL_CUSTOM"`
+				}{&pV}
+				err1 := Parser{}.Parse(obj1)
+				err2 := Parser{}.Parse(obj2)
+
+				So(err1, ShouldNotBeNil)
+				So(err1.Error(), ShouldEqual, "some error")
+				So(err2, ShouldNotBeNil)
+				So(err2.Error(), ShouldEqual, "some error")
+			})
+
+			Convey("nested structs", func() {
+				setEnv("FAIL_NESTED", "?-?")
+				obj1 := &struct {
+					N struct {
+						V int `env:"FAIL_NESTED"`
+					}
+				}{}
+				obj2 := &struct {
+					N *struct {
+						V int `env:"FAIL_NESTED"`
+					}
+				}{&struct {
+					V int `env:"FAIL_NESTED"`
+				}{}}
+				err1 := Parser{}.Parse(obj1)
+				err2 := Parser{}.Parse(obj2)
+
+				So(err1, ShouldNotBeNil)
+				So(err1, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err2, ShouldNotBeNil)
+				So(err2, ShouldHaveSameTypeAs, &strconv.NumError{})
+			})
+
+		})
+
 	})
 }
 
@@ -347,6 +477,12 @@ type customUint8 uint8
 func (v *customUint8) UnmarshalText(_ []byte) error {
 	*v = 7
 	return nil
+}
+
+type customFailure uint8
+
+func (_ *customFailure) UnmarshalText(_ []byte) error {
+	return errors.New("some error")
 }
 
 type EmbeddedStruct struct {

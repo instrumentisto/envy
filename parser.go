@@ -13,6 +13,7 @@ import (
 
 var (
 	// TODO: typed errors
+	ErrNotStructPtr    = errors.New("envigo: expected a pointer to a struct")
 	ErrUnsupportedType = errors.New("envigo: unsupported type")
 	ErrEmptyVarName    = errors.New("envigo: env var name cannot be empty")
 )
@@ -20,8 +21,15 @@ var (
 type Parser struct{}
 
 func (p Parser) Parse(obj interface{}) error {
-	// todo: not a struct pointer-check
-	return p.parseStruct(refl.ValueOf(obj).Elem())
+	ptr := refl.ValueOf(obj)
+	if ptr.Kind() != refl.Ptr {
+		return ErrNotStructPtr
+	}
+	val := ptr.Elem()
+	if val.Kind() != refl.Struct {
+		return ErrNotStructPtr
+	}
+	return p.parseStruct(val)
 }
 
 func (p Parser) parseStruct(structVal refl.Value) error {
@@ -66,8 +74,6 @@ L:
 			}
 		}
 		fieldKind := fieldVal.Kind()
-
-		// If hasTag && impl TextUnmarshaler -> return
 
 		// If no `env` tag: omit and parse recursively if struct
 		if !hasTag {
@@ -119,11 +125,6 @@ L:
 				return err
 			}
 			fieldVal.SetFloat(val)
-		// Parse recursive struct
-		case refl.Struct:
-			if err := p.parseStruct(fieldVal); err != nil {
-				return err
-			}
 		default:
 			return ErrUnsupportedType
 		}
