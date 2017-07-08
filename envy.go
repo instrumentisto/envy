@@ -9,7 +9,10 @@ import (
 	"time"
 )
 
+// TODO: think about different behavior
+
 var (
+	// TODO: typed errors
 	ErrUnsupportedType = errors.New("envigo: unsupported type")
 	ErrEmptyVarName    = errors.New("envigo: env var name cannot be empty")
 )

@@ -9,6 +9,10 @@ import (
 )
 
 func TestParser_Parse(t *testing.T) {
+	Convey("When no struct pointer is passed", t, func() {
+		// TODO:
+	})
+
 	Convey("Parses supported types", t, func() {
 		p := Parser{}
 
@@ -261,6 +265,37 @@ func TestParser_Parse(t *testing.T) {
 		So(obj.N.N.N.V, ShouldEqual, uint(15))
 	})
 
+	Convey("Parses embedded structs", t, func() {
+		setEnv("EMBEDDED_BOOL", "true")
+		setEnv("EMBEDDED_INT", "-2")
+
+		Convey("Raw struct", func() {
+			obj := &struct {
+				EmbeddedStruct
+				V bool `env:"EMBEDDED_BOOL"`
+			}{}
+			err := Parser{}.Parse(obj)
+
+			So(err, ShouldBeNil)
+			So(obj.V, ShouldEqual, true)
+			So(obj.EmbeddedStruct.V, ShouldEqual, true)
+			So(obj.EmbeddedStruct.V2, ShouldEqual, -2)
+		})
+
+		Convey("Struct behind pointer", func() {
+			obj := &struct {
+				*EmbeddedStruct
+				V bool `env:"EMBEDDED_BOOL"`
+			}{EmbeddedStruct: &EmbeddedStruct{}}
+			err := Parser{}.Parse(obj)
+
+			So(err, ShouldBeNil)
+			So(obj.V, ShouldEqual, true)
+			So(obj.EmbeddedStruct.V, ShouldEqual, true)
+			So(obj.EmbeddedStruct.V2, ShouldEqual, -2)
+		})
+	})
+
 	Convey("Parses values for types behind pointers", t, func() {
 		setEnv("DEREF_BOOL", "true")
 		setEnv("DEREF_INT", "-10")
@@ -283,7 +318,7 @@ func TestParser_Parse(t *testing.T) {
 		So(***(obj.N).V, ShouldEqual, int(-10))
 	})
 
-	Convey("Omitts nil pointers", t, func() {
+	Convey("Omitts nil pointers", t, func() {  // TODO: do not omit nil pointers!
 		setEnv("PTR_BOOL", "true")
 		obj := &struct {
 			V *bool `env:"PTR_BOOL"`
@@ -314,14 +349,14 @@ func (v *customUint8) UnmarshalText(_ []byte) error {
 	return nil
 }
 
-func setEnv(name, val string) {
-	if err := os.Setenv(name, val); err != nil {
-		panic(err)
-	}
+type EmbeddedStruct struct {
+	V bool `env:"EMBEDDED_BOOL"`
+	V2 int `env:"EMBEDDED_INT"`
 }
 
-func unsetEnv(name string) {
-	if err := os.Unsetenv(name); err != nil {
+// setEnv is a simple helper function for setting env vars in one line.
+func setEnv(name, val string) {
+	if err := os.Setenv(name, val); err != nil {
 		panic(err)
 	}
 }
