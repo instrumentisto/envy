@@ -35,37 +35,52 @@ L:
 			continue
 		}
 
+		envVarName, hasTag := structType.Field(i).Tag.Lookup("env")
+		if hasTag && envVarName == "" {
+			return ErrEmptyVarName
+		}
+
+		// Unmarshal with custom unmarshaller
+		if hasTag {
+			if ok, err := parseAsTextUnmarshaler(fieldVal, envVarName); ok {
+				if err != nil {
+					return err
+				}
+				continue
+			}
+		}
+
 		// Dereference pointer
 		for fieldVal.Kind() == refl.Ptr {
 			if fieldVal.IsNil() {
 				continue L
 			}
 			fieldVal = fieldVal.Elem()
+			if hasTag {
+				if ok, err := parseAsTextUnmarshaler(fieldVal, envVarName); ok {
+					if err != nil {
+						return err
+					}
+					continue L
+				}
+			}
 		}
 		fieldKind := fieldVal.Kind()
 
-		// Omit non-struct or parse recursive struct if no `env` tag
-		envVarName, hasTag := structType.Field(i).Tag.Lookup("env")
+		// If hasTag && impl TextUnmarshaler -> return
+
+		// If no `env` tag: omit and parse recursively if struct
 		if !hasTag {
 			if fieldKind == refl.Struct {
 				if err := p.parseStruct(fieldVal); err != nil {
 					return err
 				}
-				continue
-			}
-		}
-		if envVarName == "" {
-			return ErrEmptyVarName
-		}
-		envValue := os.Getenv(envVarName) // TODO: do not parse always
-
-		// Unmarshal with custom unmarshaller
-		if field, ok := fieldVal.Interface().(encoding.TextUnmarshaler); ok {
-			if err := field.UnmarshalText([]byte(envValue)); err != nil {
-				return err
 			}
 			continue
 		}
+
+		envValue := os.Getenv(envVarName)
+
 		// Unmarshal as time.Duration
 		fieldType := fieldVal.Type()
 		if fieldType.PkgPath() == "time" && fieldType.Name() == "Duration" {
@@ -114,4 +129,11 @@ L:
 		}
 	}
 	return nil
+}
+
+func parseAsTextUnmarshaler(fieldVal refl.Value, envVarName string) (bool, error) {
+	if field, ok := fieldVal.Interface().(encoding.TextUnmarshaler); ok {
+		return true, field.UnmarshalText([]byte(os.Getenv(envVarName)))
+	}
+	return false, nil
 }

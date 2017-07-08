@@ -318,7 +318,7 @@ func TestParser_Parse(t *testing.T) {
 		So(***(obj.N).V, ShouldEqual, int(-10))
 	})
 
-	Convey("Omitts nil pointers", t, func() {  // TODO: do not omit nil pointers!
+	Convey("Omitts nil pointers", t, func() { // TODO: do not omit nil pointers!
 		setEnv("PTR_BOOL", "true")
 		obj := &struct {
 			V *bool `env:"PTR_BOOL"`
@@ -331,14 +331,14 @@ func TestParser_Parse(t *testing.T) {
 
 	Convey("Parses with custom parser if type has one", t, func() {
 		setEnv("CUSTOM_UINT8", "10")
-		v := customUint8(7)
+		v := customUint8(3)
 		obj := &struct {
 			V *customUint8 `env:"CUSTOM_UINT8"`
 		}{&v}
 		err := Parser{}.Parse(obj)
 
 		So(err, ShouldBeNil)
-		So(*(obj.V), ShouldEqual, 10)
+		So(*(obj.V), ShouldEqual, 7)
 	})
 }
 
@@ -350,8 +350,8 @@ func (v *customUint8) UnmarshalText(_ []byte) error {
 }
 
 type EmbeddedStruct struct {
-	V bool `env:"EMBEDDED_BOOL"`
-	V2 int `env:"EMBEDDED_INT"`
+	V  bool `env:"EMBEDDED_BOOL"`
+	V2 int  `env:"EMBEDDED_INT"`
 }
 
 // setEnv is a simple helper function for setting env vars in one line.
