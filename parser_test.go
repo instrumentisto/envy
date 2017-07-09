@@ -3,7 +3,6 @@ package envigo
 import (
 	"errors"
 	"os"
-	"strconv"
 	"testing"
 	"time"
 
@@ -230,7 +229,8 @@ func TestParser_Parse(t *testing.T) {
 		err := Parser{}.Parse(obj)
 
 		Convey("Returns error", func() {
-			So(err, ShouldEqual, ErrUnsupportedType)
+			So(err, ShouldNotBeNil)
+			So(err, ShouldHaveSameTypeAs, UnparsableTypeError{})
 		})
 
 		Convey("Does not mutate value", func() {
@@ -246,7 +246,8 @@ func TestParser_Parse(t *testing.T) {
 		err := Parser{}.Parse(obj)
 
 		Convey("Returns error", func() {
-			So(err, ShouldEqual, ErrEmptyVarName)
+			So(err, ShouldNotBeNil)
+			So(err, ShouldHaveSameTypeAs, EmptyVarNameError{})
 		})
 
 		Convey("Does not mutate value", func() {
@@ -377,7 +378,8 @@ func TestParser_Parse(t *testing.T) {
 			}{}
 			err := Parser{}.Parse(obj)
 
-			So(err, ShouldEqual, ErrUnsupportedType)
+			So(err, ShouldNotBeNil)
+			So(err, ShouldHaveSameTypeAs, UnparsableTypeError{})
 		})
 
 	})
@@ -414,15 +416,20 @@ func TestParser_Parse(t *testing.T) {
 				err5 := Parser{}.Parse(obj5)
 
 				So(err1, ShouldNotBeNil)
-				So(err1, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err1, ShouldHaveSameTypeAs, ParseError{})
+				So(err1.Error(), ShouldContainSubstring, "'FAIL_BOOL'")
 				So(err2, ShouldNotBeNil)
-				So(err2, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err2, ShouldHaveSameTypeAs, ParseError{})
+				So(err2.Error(), ShouldContainSubstring, "'FAIL_INT'")
 				So(err3, ShouldNotBeNil)
-				So(err3, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err3, ShouldHaveSameTypeAs, ParseError{})
+				So(err3.Error(), ShouldContainSubstring, "'FAIL_UINT'")
 				So(err4, ShouldNotBeNil)
-				So(err4, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err4, ShouldHaveSameTypeAs, ParseError{})
+				So(err4.Error(), ShouldContainSubstring, "'FAIL_FLOAT'")
 				So(err5, ShouldNotBeNil)
-				So(err5.Error(), ShouldStartWith, "time")
+				So(err5, ShouldHaveSameTypeAs, ParseError{})
+				So(err5.Error(), ShouldContainSubstring, "'FAIL_DURATION'")
 			})
 
 			Convey("custom parser type", func() {
@@ -439,9 +446,9 @@ func TestParser_Parse(t *testing.T) {
 				err2 := Parser{}.Parse(obj2)
 
 				So(err1, ShouldNotBeNil)
-				So(err1.Error(), ShouldEqual, "some error")
+				So(err1, ShouldHaveSameTypeAs, ParseError{})
 				So(err2, ShouldNotBeNil)
-				So(err2.Error(), ShouldEqual, "some error")
+				So(err2, ShouldHaveSameTypeAs, ParseError{})
 			})
 
 			Convey("nested structs", func() {
@@ -462,9 +469,9 @@ func TestParser_Parse(t *testing.T) {
 				err2 := Parser{}.Parse(obj2)
 
 				So(err1, ShouldNotBeNil)
-				So(err1, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err1, ShouldHaveSameTypeAs, ParseError{})
 				So(err2, ShouldNotBeNil)
-				So(err2, ShouldHaveSameTypeAs, &strconv.NumError{})
+				So(err2, ShouldHaveSameTypeAs, ParseError{})
 			})
 
 		})

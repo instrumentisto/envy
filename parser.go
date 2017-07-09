@@ -2,21 +2,13 @@ package envigo
 
 import (
 	"encoding"
-	"errors"
 	"os"
 	refl "reflect"
 	"strconv"
 	"time"
 )
 
-// TODO: think about different behavior
-
-var (
-	// TODO: typed errors
-	ErrNotStructPtr    = errors.New("envigo: expected a pointer to a struct")
-	ErrUnsupportedType = errors.New("envigo: unsupported type")
-	ErrEmptyVarName    = errors.New("envigo: env var name cannot be empty")
-)
+// TODO: think about different behavior/mode
 
 type Parser struct{}
 
@@ -45,14 +37,16 @@ L:
 
 		envVarName, hasTag := structType.Field(i).Tag.Lookup("env")
 		if hasTag && envVarName == "" {
-			return ErrEmptyVarName
+			return EmptyVarNameError{structType.Field(i).Name}
 		}
 
 		// Unmarshal with custom unmarshaller
 		if hasTag {
 			if ok, err := parseAsTextUnmarshaler(fieldVal, envVarName); ok {
 				if err != nil {
-					return err
+					return ParseError{
+						structType.Field(i).Name, envVarName, err.Error(),
+					}
 				}
 				continue
 			}
@@ -67,7 +61,10 @@ L:
 			if hasTag {
 				if ok, err := parseAsTextUnmarshaler(fieldVal, envVarName); ok {
 					if err != nil {
-						return err
+						return ParseError{
+							structType.Field(i).Name,
+							envVarName, err.Error(),
+						}
 					}
 					continue L
 				}
@@ -79,7 +76,9 @@ L:
 		if !hasTag {
 			if fieldKind == refl.Struct {
 				if err := p.parseStruct(fieldVal); err != nil {
-					return err
+					return ParseError{
+						structType.Field(i).Name, envVarName, err.Error(),
+					}
 				}
 			}
 			continue
@@ -92,7 +91,9 @@ L:
 		if fieldType.PkgPath() == "time" && fieldType.Name() == "Duration" {
 			val, err := time.ParseDuration(envValue)
 			if err != nil {
-				return err
+				return ParseError{
+					structType.Field(i).Name, envVarName, err.Error(),
+				}
 			}
 			fieldVal.SetInt(int64(val))
 			continue
@@ -102,7 +103,9 @@ L:
 		case refl.Bool:
 			val, err := strconv.ParseBool(envValue)
 			if err != nil {
-				return err
+				return ParseError{
+					structType.Field(i).Name, envVarName, err.Error(),
+				}
 			}
 			fieldVal.SetBool(val)
 		case refl.String:
@@ -110,23 +113,29 @@ L:
 		case refl.Int, refl.Int8, refl.Int16, refl.Int32, refl.Int64:
 			val, err := strconv.ParseInt(envValue, 0, fieldVal.Type().Bits())
 			if err != nil {
-				return err
+				return ParseError{
+					structType.Field(i).Name, envVarName, err.Error(),
+				}
 			}
 			fieldVal.SetInt(val)
 		case refl.Uint, refl.Uint8, refl.Uint16, refl.Uint32, refl.Uint64:
 			val, err := strconv.ParseUint(envValue, 0, fieldVal.Type().Bits())
 			if err != nil {
-				return err
+				return ParseError{
+					structType.Field(i).Name, envVarName, err.Error(),
+				}
 			}
 			fieldVal.SetUint(val)
 		case refl.Float32, refl.Float64:
 			val, err := strconv.ParseFloat(envValue, fieldVal.Type().Bits())
 			if err != nil {
-				return err
+				return ParseError{
+					structType.Field(i).Name, envVarName, err.Error(),
+				}
 			}
 			fieldVal.SetFloat(val)
 		default:
-			return ErrUnsupportedType
+			return UnparsableTypeError{structType.Field(i).Name}
 		}
 	}
 	return nil
