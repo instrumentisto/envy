@@ -1,4 +1,4 @@
-envigo
+envigo [![GitHub release](https://img.shields.io/github/release/tyranron/envigo.svg)](https://github.com/tyranron/envigo/releases)
 ======
 
 [![Build Status](https://travis-ci.org/tyranron/envigo.svg?branch=master)](https://travis-ci.org/tyranron/envigo)
