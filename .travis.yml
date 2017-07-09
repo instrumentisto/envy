@@ -9,11 +9,10 @@ go:
 install:
   - go get github.com/alecthomas/gometalinter
   - gometalinter --install
-  - go get -t ./...
 
 script:
-  - gometalinter --config=.gometalinter.json ./...
-  - go test -race -cover ./...
+  - gometalinter --config=.gometalinter.json ./
+  - go test -race -cover ./
 
 notifications:
   email:
