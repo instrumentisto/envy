@@ -269,7 +269,7 @@ func TestParser_Parse(t *testing.T) {
 					}
 				}
 			}
-			h bool
+			h bool // nolint: unused, megacheck
 		}{}
 		err := Parser{}.Parse(obj)
 

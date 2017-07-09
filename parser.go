@@ -141,7 +141,9 @@ L:
 	return nil
 }
 
-func parseAsTextUnmarshaler(fieldVal refl.Value, envVarName string) (bool, error) {
+func parseAsTextUnmarshaler(
+	fieldVal refl.Value, envVarName string,
+) (bool, error) {
 	if field, ok := fieldVal.Interface().(encoding.TextUnmarshaler); ok {
 		return true, field.UnmarshalText([]byte(os.Getenv(envVarName)))
 	}

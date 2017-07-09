@@ -6,6 +6,15 @@ go:
   - 1.7
   - 1.8
 
+install:
+  - go get github.com/alecthomas/gometalinter
+  - gometalinter --install
+  - go get -t ./...
+
+script:
+  - gometalinter --config=.gometalinter.json ./...
+  - go test -race -cover ./...
+
 notifications:
   email:
     on_success: never
