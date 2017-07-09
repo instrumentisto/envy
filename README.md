@@ -7,3 +7,104 @@ envigo
 [![GoDoc](https://godoc.org/github.com/tyranron/envigo?status.svg)](https://godoc.org/github.com/tyranron/envigo)
 
 Yet another Go package for parsing environment variables in `struct`s.
+
+
+
+
+## Usage
+
+Having some environment variables:
+```bash
+export DEBUG_MODE=true
+export WORKERS_COUNT=5
+export TIMEOUT="4s300ms"
+```
+
+And struct with tagged fields:
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/tyranron/envigo"
+)
+
+type Config struct {
+	DebugMode    bool `env:"DEBUG_MODE"`
+	WorkersCount int  `env:"WORKERS_COUNT"`
+	Timeouts     struct {
+		Default time.Duration `env:"TIMEOUT"`
+	}
+}
+
+func main() {
+	conf := &Config{}
+	if err := (envigo.Parser{}).Parse(conf); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", conf)
+}
+```
+
+Results in:
+```
+&{DebugMode:true WorkersCount:5 Timeouts:{Default:4.3s}}
+```
+
+
+
+
+## Supported Types
+
+These types are supported by envigo be default:
+
+- `bool`
+- `string`
+- `int`, `int8`, `int16`, `int32`, `int64`
+- `uint`, `uint8`, `uint16`, `uint32`, `uint64`
+- `byte`, `rune`,
+- `float32`, `float64`
+- [`time.Duration`][1]
+- anything that implements [`encoding.TextUnmarshaler`][2]
+
+
+
+
+## Custom Parsing
+
+To make parser be able to parse a type that is not supported by default, or to change default parsing behaviour,you just need to implement [`encoding.TextUnmarshaler`][2] interface for your type.
+ 
+```go
+type MyType struct {
+	Value int
+}
+
+func (t *MyType) UnmarshalText(envVarValue []byte) error {
+	val, err := strconv.ParseInt(string(envVarValue), 10, 64)
+	if err != nil {
+		return err
+	}
+	t.Value = val
+	return nil
+}
+```
+
+
+
+
+## TODO
+
+- parsing slices, maps
+- parsing `net.IP`, `time.Time` (?)
+- auto-init of nil pointer
+- different parsing modes (strict, etc)
+
+
+
+
+
+[1]: https://golang.org/pkg/time/#Duration
+[2]: https://golang.org/pkg/encoding/#TextUnmarshaler
