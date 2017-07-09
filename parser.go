@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package envigo implements parser to parse values from environment variables
+// into tagged struct fields.
 package envigo
 
 import (
@@ -24,8 +26,11 @@ import (
 
 // TODO: think about different behavior/mode
 
+// Parser is an implementation of environment variables parser.
 type Parser struct{}
 
+// Parse inspects given struct and parses environment variables that were
+// mentioned in struct field tag `env`.
 func (p Parser) Parse(obj interface{}) error {
 	ptr := refl.ValueOf(obj)
 	if ptr.Kind() != refl.Ptr {
@@ -38,6 +43,7 @@ func (p Parser) Parse(obj interface{}) error {
 	return p.parseStruct(val)
 }
 
+// parseStruct performs parsing for given struct.
 func (p Parser) parseStruct(structVal refl.Value) error {
 	structType := structVal.Type()
 L:
@@ -155,6 +161,8 @@ L:
 	return nil
 }
 
+// parseAsTextUnmarshaler tries to parse value from environment variable
+// with encoding.TextUnmarshaler implementation.
 func parseAsTextUnmarshaler(
 	fieldVal refl.Value, envVarName string,
 ) (bool, error) {
