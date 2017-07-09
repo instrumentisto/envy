@@ -5,6 +5,7 @@ envigo
 [![GoCover](https://gocover.io/_badge/github.com/tyranron/envigo)](https://gocover.io/github.com/tyranron/envigo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tyranron/envigo)](https://goreportcard.com/report/github.com/tyranron/envigo)
 [![GoDoc](https://godoc.org/github.com/tyranron/envigo?status.svg)](https://godoc.org/github.com/tyranron/envigo)
+[![License](https://img.shields.io/badge/license-dual%20MIT%2FApache--2.0-blue.svg)](#license)
 
 Yet another Go package for parsing environment variables in `struct`s.
 
@@ -102,6 +103,17 @@ func (t *MyType) UnmarshalText(envVarValue []byte) error {
 - auto-init of nil pointer
 - different parsing modes (strict, etc)
 
+
+
+
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT License ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
 
 
 
