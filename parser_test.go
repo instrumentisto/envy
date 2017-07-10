@@ -269,6 +269,27 @@ func TestParser_Parse(t *testing.T) {
 		})
 	})
 
+	Convey("If env var is empty or is not set", t, func() {
+		p := Parser{}
+		obj := &struct {
+			V uint8 `env:"UINT8"`
+		}{5}
+
+		Convey("Does not mutate value", func() {
+			setEnv("UINT8", "")
+			err := p.Parse(obj)
+
+			So(err, ShouldBeNil)
+			So(obj.V, ShouldEqual, 5)
+
+			unsetEnv("UINT8")
+			err = p.Parse(obj)
+
+			So(err, ShouldBeNil)
+			So(obj.V, ShouldEqual, 5)
+		})
+	})
+
 	Convey("Parses nested structs", t, func() {
 		setEnv("NESTED_BOOL", "true")
 		setEnv("NESTED_INT", "-10")
@@ -384,7 +405,7 @@ func TestParser_Parse(t *testing.T) {
 	Convey("On tagged struct without custom parser", t, func() {
 
 		Convey("Returns error of unsupported type", func() {
-			setEnv("EMBEDDED_STRUCT", "")
+			setEnv("EMBEDDED_STRUCT", "{3}")
 			setEnv("EMBEDDED_BOOL", "true")
 			setEnv("EMBEDDED_INT", "-2")
 			obj := &struct {
@@ -514,6 +535,13 @@ type EmbeddedStruct struct {
 // setEnv is a simple helper function for setting env vars in one line.
 func setEnv(name, val string) {
 	if err := os.Setenv(name, val); err != nil {
+		panic(err)
+	}
+}
+
+// unsetEnv is a simple helper function for removing env vars in one line.
+func unsetEnv(name string) {
+	if err := os.Unsetenv(name); err != nil {
 		panic(err)
 	}
 }

@@ -44,7 +44,7 @@ func (p Parser) Parse(obj interface{}) error {
 }
 
 // parseStruct performs parsing for given struct.
-func (p Parser) parseStruct(structVal refl.Value) error {
+func (p Parser) parseStruct(structVal refl.Value) error { // nolint: gocyclo
 	structType := structVal.Type()
 L:
 	for i := 0; i < structVal.NumField(); i++ {
@@ -55,17 +55,23 @@ L:
 			continue
 		}
 
-		envVarName, hasTag := structType.Field(i).Tag.Lookup("env")
-		if hasTag && envVarName == "" {
+		envName, hasTag := structType.Field(i).Tag.Lookup("env")
+		if hasTag && envName == "" {
 			return EmptyVarNameError{structType.Field(i).Name}
+		}
+		envValue := ""
+		if hasTag {
+			if envValue = os.Getenv(envName); envValue == "" {
+				continue
+			}
 		}
 
 		// Unmarshal with custom unmarshaller
 		if hasTag {
-			if ok, err := parseAsTextUnmarshaler(fieldVal, envVarName); ok {
+			if ok, err := parseAsTextUnmarshaler(fieldVal, envValue); ok {
 				if err != nil {
 					return ParseError{
-						structType.Field(i).Name, envVarName, err.Error(),
+						structType.Field(i).Name, envName, err.Error(),
 					}
 				}
 				continue
@@ -79,11 +85,10 @@ L:
 			}
 			fieldVal = fieldVal.Elem()
 			if hasTag {
-				if ok, err := parseAsTextUnmarshaler(fieldVal, envVarName); ok {
+				if ok, err := parseAsTextUnmarshaler(fieldVal, envValue); ok {
 					if err != nil {
 						return ParseError{
-							structType.Field(i).Name,
-							envVarName, err.Error(),
+							structType.Field(i).Name, envName, err.Error(),
 						}
 					}
 					continue L
@@ -97,14 +102,12 @@ L:
 			if fieldKind == refl.Struct {
 				if err := p.parseStruct(fieldVal); err != nil {
 					return ParseError{
-						structType.Field(i).Name, envVarName, err.Error(),
+						structType.Field(i).Name, envName, err.Error(),
 					}
 				}
 			}
 			continue
 		}
-
-		envValue := os.Getenv(envVarName)
 
 		// Unmarshal as time.Duration
 		fieldType := fieldVal.Type()
@@ -112,7 +115,7 @@ L:
 			val, err := time.ParseDuration(envValue)
 			if err != nil {
 				return ParseError{
-					structType.Field(i).Name, envVarName, err.Error(),
+					structType.Field(i).Name, envName, err.Error(),
 				}
 			}
 			fieldVal.SetInt(int64(val))
@@ -124,7 +127,7 @@ L:
 			val, err := strconv.ParseBool(envValue)
 			if err != nil {
 				return ParseError{
-					structType.Field(i).Name, envVarName, err.Error(),
+					structType.Field(i).Name, envName, err.Error(),
 				}
 			}
 			fieldVal.SetBool(val)
@@ -134,7 +137,7 @@ L:
 			val, err := strconv.ParseInt(envValue, 0, fieldVal.Type().Bits())
 			if err != nil {
 				return ParseError{
-					structType.Field(i).Name, envVarName, err.Error(),
+					structType.Field(i).Name, envName, err.Error(),
 				}
 			}
 			fieldVal.SetInt(val)
@@ -142,7 +145,7 @@ L:
 			val, err := strconv.ParseUint(envValue, 0, fieldVal.Type().Bits())
 			if err != nil {
 				return ParseError{
-					structType.Field(i).Name, envVarName, err.Error(),
+					structType.Field(i).Name, envName, err.Error(),
 				}
 			}
 			fieldVal.SetUint(val)
@@ -150,7 +153,7 @@ L:
 			val, err := strconv.ParseFloat(envValue, fieldVal.Type().Bits())
 			if err != nil {
 				return ParseError{
-					structType.Field(i).Name, envVarName, err.Error(),
+					structType.Field(i).Name, envName, err.Error(),
 				}
 			}
 			fieldVal.SetFloat(val)
@@ -164,10 +167,10 @@ L:
 // parseAsTextUnmarshaler tries to parse value from environment variable
 // with encoding.TextUnmarshaler implementation.
 func parseAsTextUnmarshaler(
-	fieldVal refl.Value, envVarName string,
+	fieldVal refl.Value, envValue string,
 ) (bool, error) {
 	if field, ok := fieldVal.Interface().(encoding.TextUnmarshaler); ok {
-		return true, field.UnmarshalText([]byte(os.Getenv(envVarName)))
+		return true, field.UnmarshalText([]byte(envValue))
 	}
 	return false, nil
 }
