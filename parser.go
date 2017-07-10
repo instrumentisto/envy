@@ -26,6 +26,11 @@ import (
 
 // TODO: think about different behavior/mode
 
+// Parse performs parsing with default parser.
+func Parse(obj interface{}) error {
+	return Parser{}.Parse(obj)
+}
+
 // Parser is an implementation of environment variables parser.
 type Parser struct{}
 

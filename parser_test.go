@@ -23,6 +23,30 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func TestParse(t *testing.T) {
+	Convey("Performs parsing with default parser", t, func() {
+		setEnv("BOOL", "false")
+		obj := &struct {
+			V bool `env:"BOOL"`
+		}{true}
+		err := Parse(obj)
+
+		So(err, ShouldBeNil)
+		So(obj.V, ShouldBeFalse)
+	})
+
+	Convey("Returns default parser error if occurs", t, func() {
+		obj1 := struct {
+			V bool
+		}{}
+		some := true
+		obj2 := &some
+
+		So(Parse(obj1), ShouldEqual, ErrNotStructPtr)
+		So(Parse(obj2), ShouldEqual, ErrNotStructPtr)
+	})
+}
+
 func TestParser_Parse(t *testing.T) {
 	Convey("If non-struct pointer is passed", t, func() {
 		p := Parser{}
