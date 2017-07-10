@@ -61,19 +61,18 @@ L:
 		}
 
 		envName, hasTag := structType.Field(i).Tag.Lookup("env")
-		if hasTag && envName == "" {
-			return EmptyVarNameError{structType.Field(i).Name}
-		}
-		envValue := ""
 		if hasTag {
-			if envValue = os.Getenv(envName); envValue == "" {
+			if envName == "" {
+				return EmptyVarNameError{structType.Field(i).Name}
+			}
+			if _, exists := os.LookupEnv(envName); !exists {
 				continue
 			}
 		}
 
 		// Unmarshal with custom unmarshaller
 		if hasTag {
-			if ok, err := parseAsTextUnmarshaler(fieldVal, envValue); ok {
+			if ok, err := parseAsTextUnmarshaler(fieldVal, envName); ok {
 				if err != nil {
 					return ParseError{
 						structType.Field(i).Name, envName, err.Error(),
@@ -90,7 +89,7 @@ L:
 			}
 			fieldVal = fieldVal.Elem()
 			if hasTag {
-				if ok, err := parseAsTextUnmarshaler(fieldVal, envValue); ok {
+				if ok, err := parseAsTextUnmarshaler(fieldVal, envName); ok {
 					if err != nil {
 						return ParseError{
 							structType.Field(i).Name, envName, err.Error(),
@@ -113,6 +112,8 @@ L:
 			}
 			continue
 		}
+
+		envValue := os.Getenv(envName)
 
 		// Unmarshal as time.Duration
 		fieldType := fieldVal.Type()
@@ -172,10 +173,10 @@ L:
 // parseAsTextUnmarshaler tries to parse value from environment variable
 // with encoding.TextUnmarshaler implementation.
 func parseAsTextUnmarshaler(
-	fieldVal refl.Value, envValue string,
+	fieldVal refl.Value, envName string,
 ) (bool, error) {
 	if field, ok := fieldVal.Interface().(encoding.TextUnmarshaler); ok {
-		return true, field.UnmarshalText([]byte(envValue))
+		return true, field.UnmarshalText([]byte(os.Getenv(envName)))
 	}
 	return false, nil
 }

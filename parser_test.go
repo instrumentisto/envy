@@ -293,25 +293,34 @@ func TestParser_Parse(t *testing.T) {
 		})
 	})
 
-	Convey("If env var is empty or is not set", t, func() {
-		p := Parser{}
-		obj := &struct {
-			V uint8 `env:"UINT8"`
-		}{5}
+	Convey("If env var is not set", t, func() {
 
 		Convey("Does not mutate value", func() {
-			setEnv("UINT8", "")
-			err := p.Parse(obj)
-
-			So(err, ShouldBeNil)
-			So(obj.V, ShouldEqual, 5)
-
 			unsetEnv("UINT8")
-			err = p.Parse(obj)
+			obj := &struct {
+				V uint8 `env:"UINT8"`
+			}{5}
+			err := Parser{}.Parse(obj)
 
 			So(err, ShouldBeNil)
 			So(obj.V, ShouldEqual, 5)
 		})
+
+	})
+
+	Convey("If env var is empty", t, func() {
+
+		Convey("Parses empty value", func() {
+			setEnv("STRING", "")
+			obj := &struct {
+				V string `env:"STRING"`
+			}{"some"}
+			err := Parser{}.Parse(obj)
+
+			So(err, ShouldBeNil)
+			So(obj.V, ShouldEqual, "")
+		})
+
 	})
 
 	Convey("Parses nested structs", t, func() {
