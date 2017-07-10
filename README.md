@@ -17,7 +17,6 @@ Yet another Go package for parsing environment variables in `struct`s.
 Having some environment variables:
 ```bash
 export DEBUG_MODE=true
-export WORKERS_COUNT=5
 export TIMEOUT="4s300ms"
 ```
 
@@ -52,7 +51,7 @@ func main() {
 
 Results in:
 ```
-&{DebugMode:true WorkersCount:5 Timeouts:{Default:4.3s}}
+&{DebugMode:true WorkersCount:0 Timeouts:{Default:4.3s}}
 ```
 
 
