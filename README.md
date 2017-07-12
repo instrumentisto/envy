@@ -99,7 +99,6 @@ func (t *MyType) UnmarshalText(envVarValue []byte) error {
 
 - parsing slices, maps
 - parsing `net.IP`, `time.Time` (?)
-- auto-init of nil pointer
 - different parsing modes (strict, etc)
 
 

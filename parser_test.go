@@ -400,7 +400,7 @@ func TestParser_Parse(t *testing.T) {
 		So(***(obj.N).V, ShouldEqual, int(-10))
 	})
 
-	Convey("Omitts nil pointers", t, func() { // TODO: do not omit nil pointers!
+	Convey("Omitts nil pointers", t, func() {
 		setEnv("PTR_BOOL", "true")
 		obj := &struct {
 			V *bool `env:"PTR_BOOL"`
