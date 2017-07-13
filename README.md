@@ -97,7 +97,6 @@ func (t *MyType) UnmarshalText(envVarValue []byte) error {
 
 ## TODO
 
-- custom parsing of non-pointer types
 - parsing slices, maps
 - parsing `net.IP`, `time.Time` (?)
 - different parsing modes (strict, etc)

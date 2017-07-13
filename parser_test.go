@@ -413,24 +413,31 @@ func TestParser_Parse(t *testing.T) {
 
 	Convey("Uses custom parser if type has one", t, func() {
 
-		Convey("Performs custome parse correctly", func() {
+		Convey("Performs custom parse correctly", func() {
 			setEnv("CUSTOM_UINT8", "10")
-			v1 := customUint8(1)
-			v2 := customUint8(2)
-			pv2 := &v2
+			p := Parser{}
 			obj1 := &struct {
-				V *customUint8 `env:"CUSTOM_UINT8"`
-			}{&v1}
+				V customUint8 `env:"CUSTOM_UINT8"`
+			}{}
+			v2 := customUint8(2)
 			obj2 := &struct {
+				V *customUint8 `env:"CUSTOM_UINT8"`
+			}{&v2}
+			v3 := customUint8(3)
+			pv3 := &v3
+			obj3 := &struct {
 				V **customUint8 `env:"CUSTOM_UINT8"`
-			}{&pv2}
-			err1 := Parser{}.Parse(obj1)
-			err2 := Parser{}.Parse(obj2)
+			}{&pv3}
+			err1 := p.Parse(obj1)
+			err2 := p.Parse(obj2)
+			err3 := p.Parse(obj3)
 
 			So(err1, ShouldBeNil)
-			So(*(obj1.V), ShouldEqual, 7)
+			So(obj1.V, ShouldEqual, 7)
 			So(err2, ShouldBeNil)
-			So(**(obj2.V), ShouldEqual, 7)
+			So(*(obj2.V), ShouldEqual, 7)
+			So(err3, ShouldBeNil)
+			So(**(obj3.V), ShouldEqual, 7)
 		})
 
 	})

@@ -178,5 +178,8 @@ func parseAsTextUnmarshaler(
 	if field, ok := fieldVal.Interface().(encoding.TextUnmarshaler); ok {
 		return true, field.UnmarshalText([]byte(os.Getenv(envName)))
 	}
+	if fieldVal.CanAddr() {
+		return parseAsTextUnmarshaler(fieldVal.Addr(), envName)
+	}
 	return false, nil
 }
