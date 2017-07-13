@@ -5,7 +5,6 @@
     "gosimple",
     "lll",
     "misspell",
-    "unparam",
     "unused",
     "staticcheck"
   ]
