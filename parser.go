@@ -115,9 +115,9 @@ L:
 
 		envValue := os.Getenv(envName)
 
+		switch fieldType := fieldVal.Type(); {
 		// Unmarshal as time.Duration
-		fieldType := fieldVal.Type()
-		if fieldType.PkgPath() == "time" && fieldType.Name() == "Duration" {
+		case fieldType.PkgPath() == "time" && fieldType.Name() == "Duration":
 			val, err := time.ParseDuration(envValue)
 			if err != nil {
 				return ParseError{

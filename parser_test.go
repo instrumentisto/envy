@@ -16,6 +16,7 @@ package envigo
 
 import (
 	"errors"
+	"net"
 	"os"
 	"testing"
 	"time"
@@ -255,6 +256,22 @@ func TestParser_Parse(t *testing.T) {
 				-(time.Hour + 2*time.Minute + 3*time.Second +
 					4*time.Millisecond + 5*time.Microsecond +
 					6*time.Nanosecond))
+		})
+
+		Convey("net.IP", func() {
+			ipv4 := "32.1.219.8"
+			ipv6 := "2001:db8:a0b:12f0::1"
+			setEnv("IPv4", ipv4)
+			setEnv("IPv6", ipv6)
+			obj := &struct {
+				V4 net.IP `env:"IPv4"`
+				V6 net.IP `env:"IPv6"`
+			}{}
+			err := p.Parse(obj)
+
+			So(err, ShouldBeNil)
+			So(obj.V4.String(), ShouldEqual, ipv4)
+			So(obj.V6.String(), ShouldEqual, ipv6)
 		})
 
 	})
