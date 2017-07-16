@@ -258,6 +258,18 @@ func TestParser_Parse(t *testing.T) {
 					6*time.Nanosecond))
 		})
 
+		Convey("time.Time", func() {
+			t := time.Now()
+			setEnv("TIME_RFC3339", t.Format(time.RFC3339))
+			obj := &struct {
+				V time.Time `env:"TIME_RFC3339"`
+			}{}
+			err := p.Parse(obj)
+
+			So(err, ShouldBeNil)
+			So(obj.V.Format(time.RFC3339), ShouldEqual, t.Format(time.RFC3339))
+		})
+
 		Convey("net.IP", func() {
 			ipv4 := "32.1.219.8"
 			ipv6 := "2001:db8:a0b:12f0::1"

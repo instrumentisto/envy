@@ -67,7 +67,7 @@ These types are supported by envigo be default:
 - `uint`, `uint8`, `uint16`, `uint32`, `uint64`
 - `byte`, `rune`,
 - `float32`, `float64`
-- [`time.Duration`][1]
+- [`time.Duration`][1], [`time.Time`][4] (RFC 3339)
 - [`net.IP`][3]
 - anything that implements [`encoding.TextUnmarshaler`][2]
 
@@ -99,7 +99,6 @@ func (t *MyType) UnmarshalText(envVarValue []byte) error {
 ## TODO
 
 - parsing slices, maps
-- parsing `time.Time` (?)
 - different parsing modes (strict, etc)
 
 
@@ -120,3 +119,4 @@ at your option.
 [1]: https://golang.org/pkg/time/#Duration
 [2]: https://golang.org/pkg/encoding/#TextUnmarshaler
 [3]: https://golang.org/pkg/net/#IP
+[4]: https://golang.org/pkg/time/#Time
