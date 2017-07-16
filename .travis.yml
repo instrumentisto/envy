@@ -12,7 +12,7 @@ install:
   - go get -t ./
 
 script:
-  - gometalinter --config=.gometalinter.json ./
+  - gometalinter --config=.gometalinter.json ./...
   - go test -race -cover ./
 
 notifications:

@@ -7,5 +7,6 @@
     "misspell",
     "unused",
     "staticcheck"
-  ]
+  ],
+  "Skip": ["example"]
 }
