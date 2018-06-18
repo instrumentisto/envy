@@ -73,6 +73,7 @@ These types are supported by envigo be default:
 - [`time.Duration`][1], [`time.Time`][4] (RFC 3339)
 - [`net.IP`][3]
 - anything that implements [`encoding.TextUnmarshaler`][2]
+- arrays and slices of everything above (values must be comma-separated)
 
 
 
@@ -101,7 +102,7 @@ func (t *MyType) UnmarshalText(envVarValue []byte) error {
 
 ## TODO
 
-- parsing slices, maps
+- parsing maps
 - different parsing modes (strict, etc)
 
 

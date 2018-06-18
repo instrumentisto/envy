@@ -21,6 +21,7 @@ import (
 	"os"
 	refl "reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -115,7 +116,8 @@ L:
 
 		envValue := os.Getenv(envName)
 
-		switch fieldType := fieldVal.Type(); {
+		fieldType := fieldVal.Type()
+		switch {
 		// Unmarshal as time.Duration
 		case fieldType.PkgPath() == "time" && fieldType.Name() == "Duration":
 			val, err := time.ParseDuration(envValue)
@@ -163,6 +165,207 @@ L:
 				}
 			}
 			fieldVal.SetFloat(val)
+		case refl.Array:
+			vals := strings.Split(envValue, ",")
+			if len(vals) > fieldType.Len() {
+				vals = vals[:fieldType.Len()]
+			}
+			elemType := fieldType.Elem()
+			elemKind := elemType.Kind()
+			elemVal := fieldVal.Index(0)
+			if _, ok := elemVal.Interface().(encoding.TextUnmarshaler); ok {
+				for i, val := range vals {
+					err := fieldVal.Index(i).
+						Interface().(encoding.TextUnmarshaler).
+						UnmarshalText([]byte(val))
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+				}
+				goto ARRAY_SET_FIELD
+			}
+			if elemVal.CanAddr() {
+				if _, ok := elemVal.Addr().
+					Interface().(encoding.TextUnmarshaler); ok {
+					for i, val := range vals {
+						err := fieldVal.Index(i).Addr().
+							Interface().(encoding.TextUnmarshaler).
+							UnmarshalText([]byte(val))
+						if err != nil {
+							return ParseError{
+								structType.Field(i).Name, envName, err.Error(),
+							}
+						}
+					}
+					goto ARRAY_SET_FIELD
+				}
+			}
+			switch {
+			// Unmarshal as time.Duration
+			case elemType.PkgPath() == "time" && elemType.Name() == "Duration":
+				for i, val := range vals {
+					val, err := time.ParseDuration(val)
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+					fieldVal.Index(i).SetInt(int64(val))
+				}
+				goto ARRAY_SET_FIELD
+			}
+			switch elemKind {
+			case refl.Bool:
+				for i, val := range vals {
+					val, err := strconv.ParseBool(val)
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+					fieldVal.Index(i).SetBool(val)
+				}
+			case refl.String:
+				for i, val := range vals {
+					fieldVal.Index(i).SetString(val)
+				}
+			case refl.Int, refl.Int8, refl.Int16, refl.Int32, refl.Int64:
+				for i, val := range vals {
+					val, err := strconv.ParseInt(val, 0, elemType.Bits())
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+					fieldVal.Index(i).SetInt(val)
+				}
+			case refl.Uint, refl.Uint8, refl.Uint16, refl.Uint32, refl.Uint64:
+				for i, val := range vals {
+					val, err := strconv.ParseUint(val, 0, elemType.Bits())
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+					fieldVal.Index(i).SetUint(val)
+				}
+			case refl.Float32, refl.Float64:
+				for i, val := range vals {
+					val, err := strconv.ParseFloat(val, elemType.Bits())
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+					fieldVal.Index(i).SetFloat(val)
+				}
+			default:
+				return UnparsableTypeError{structType.Field(i).Name}
+			}
+		ARRAY_SET_FIELD:
+			fieldVal.Set(fieldVal)
+		case refl.Slice:
+			vals := strings.Split(envValue, ",")
+			elemType := fieldType.Elem()
+			elemKind := elemType.Kind()
+			fieldSliceVal := refl.MakeSlice(
+				refl.SliceOf(elemType), len(vals), len(vals))
+			elemVal := fieldSliceVal.Index(0)
+			if _, ok := elemVal.Interface().(encoding.TextUnmarshaler); ok {
+				for i, val := range vals {
+					err := fieldSliceVal.Index(i).
+						Interface().(encoding.TextUnmarshaler).
+						UnmarshalText([]byte(val))
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+				}
+				goto SLICE_SET_FIELD
+			}
+			if elemVal.CanAddr() {
+				if _, ok := elemVal.Addr().
+					Interface().(encoding.TextUnmarshaler); ok {
+					for i, val := range vals {
+						err := fieldSliceVal.Index(i).Addr().
+							Interface().(encoding.TextUnmarshaler).
+							UnmarshalText([]byte(val))
+						if err != nil {
+							return ParseError{
+								structType.Field(i).Name, envName, err.Error(),
+							}
+						}
+					}
+					goto SLICE_SET_FIELD
+				}
+			}
+			switch {
+			// Unmarshal as time.Duration
+			case elemType.PkgPath() == "time" && elemType.Name() == "Duration":
+				for i, val := range vals {
+					val, err := time.ParseDuration(val)
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+					fieldSliceVal.Index(i).SetInt(int64(val))
+				}
+				goto SLICE_SET_FIELD
+			}
+			switch elemKind {
+			case refl.Bool:
+				for i, val := range vals {
+					val, err := strconv.ParseBool(val)
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+					fieldSliceVal.Index(i).SetBool(val)
+				}
+			case refl.String:
+				for i, val := range vals {
+					fieldSliceVal.Index(i).SetString(val)
+				}
+			case refl.Int, refl.Int8, refl.Int16, refl.Int32, refl.Int64:
+				for i, val := range vals {
+					val, err := strconv.ParseInt(val, 0, elemType.Bits())
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+					fieldSliceVal.Index(i).SetInt(val)
+				}
+			case refl.Uint, refl.Uint8, refl.Uint16, refl.Uint32, refl.Uint64:
+				for i, val := range vals {
+					val, err := strconv.ParseUint(val, 0, elemType.Bits())
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+					fieldSliceVal.Index(i).SetUint(val)
+				}
+			case refl.Float32, refl.Float64:
+				for i, val := range vals {
+					val, err := strconv.ParseFloat(val, elemType.Bits())
+					if err != nil {
+						return ParseError{
+							structType.Field(i).Name, envName, err.Error(),
+						}
+					}
+					fieldSliceVal.Index(i).SetFloat(val)
+				}
+			default:
+				return UnparsableTypeError{structType.Field(i).Name}
+			}
+		SLICE_SET_FIELD:
+			fieldVal.Set(fieldSliceVal)
 		default:
 			return UnparsableTypeError{structType.Field(i).Name}
 		}
